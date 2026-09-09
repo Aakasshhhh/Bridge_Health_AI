@@ -1,0 +1,8 @@
+
+models/
+data/
+outputs/
+*.h5
+*.pt
+*.pth
+*.pkl
