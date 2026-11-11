@@ -6,3 +6,9 @@ outputs/
 *.pt
 *.pth
 *.pkl
+
+venv/
+__pycache__/
+
+*.bak
+apply_fixes.py

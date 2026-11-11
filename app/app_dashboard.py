@@ -1,14 +1,17 @@
 import streamlit as st
 from tensorflow.keras.models import load_model
 import numpy as np
+# pyrefly: ignore [missing-import]
 import cv2
 import pandas as pd
 import requests
 import os
 import sys
+# pyrefly: ignore [missing-import]
 import matplotlib.pyplot as plt 
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../src')) 
+# pyrefly: ignore [missing-import]
 from fusion import get_bridge_health
 
 FLASK_PREDICT_URL = "http://127.0.0.1:5000/predict"
@@ -51,7 +54,7 @@ col_vib, col_img = st.columns(2)
 
 with col_vib:
     st.subheader("1. Upload Vibration Data (CSV)")
-    uploaded_vibration = st.file_uploader("Vibration CSV file (200 time steps)", type=["csv"])
+    uploaded_vibration = st.file_uploader("Vibration CSV (first row = one signal of 100 time steps; a 'label' column is ignored)", type=["csv"])
 
 with col_img:
     st.subheader("2. Upload Bridge Image (Cracks)")
@@ -76,7 +79,8 @@ if uploaded_image and uploaded_vibration and cnn_model:
             st.error("The uploaded CSV file is empty! Please upload the correct data.")
             st.stop()
             
-        vib_values = vib_data_df.iloc[:, 0].values.tolist()[:200]
+        vib_data_df = vib_data_df.drop(columns=[c for c in vib_data_df.columns if str(c).lower() == "label"])
+        vib_values = vib_data_df.iloc[0].values.tolist()[:100]
         
         try:
             response = requests.post(FLASK_PREDICT_URL, json={'vibration_data': vib_values})
@@ -133,9 +137,9 @@ if uploaded_image and uploaded_vibration and cnn_model:
     with col_break_2:
         st.info("Vibration Analysis (LSTM Anomaly)")
         fig, ax = plt.subplots(figsize=(7, 4)) 
-        ax.plot(vib_data_df.iloc[:, 0], color='gray')
+        ax.plot(vib_values, color='gray')
         if final_health_index < 50:
-             ax.plot(vib_data_df.iloc[:, 0].index, vib_data_df.iloc[:, 0], color='red', linewidth=0.5)
+             ax.plot(range(len(vib_values)), vib_values, color='red', linewidth=0.5)
         
         ax.set_title("Vibration Signal Over Time (Anomaly Detection)")
         ax.set_xlabel("Time Step")

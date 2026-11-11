@@ -2,11 +2,20 @@ from flask import Flask, request, jsonify
 import numpy as np
 import os
 import sys
+import joblib
 from tensorflow.keras.models import load_model
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '../src')) 
 
 app = Flask(__name__)
+
+SEQ_LEN = 100  # must match the LSTM training data
+SCALER_PATH = os.path.join(os.path.dirname(__file__), "..", "models", "scaler.pkl")
+try:
+    scaler = joblib.load(SCALER_PATH)
+except Exception as e:
+    print(f"[ERROR] Could not load scaler from {SCALER_PATH}: {e}")
+    scaler = None
 
 MODEL_FILE_NAME = "lstm_bridge_health.h5"
 MODEL_PATH = os.path.join(os.path.dirname(__file__), "..", "models", MODEL_FILE_NAME)
@@ -39,11 +48,13 @@ def predict():
 
         input_data = np.array(data['vibration_data'])
         
-        if input_data.shape[0] < 200:
-             return jsonify({"error": "Vibration data must contain at least 200 points."}), 400
+        if input_data.shape[0] < SEQ_LEN:
+             return jsonify({"error": f"Vibration data must contain at least {SEQ_LEN} points."}), 400
 
-        input_data = input_data[:200]
-        input_data = input_data.reshape((1, 200, 1))
+        input_data = input_data[:SEQ_LEN]
+        if scaler is None:
+            return jsonify({"error": "Scaler not loaded. Run train_lstm.py first."}), 503
+        input_data = scaler.transform(input_data.reshape(1, -1)).reshape((1, SEQ_LEN, 1))
 
         prediction = model.predict(input_data, verbose=0)[0][0]
         

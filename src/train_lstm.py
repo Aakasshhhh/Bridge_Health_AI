@@ -3,8 +3,9 @@ import pandas as pd
 import os
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
+import joblib
 from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import LSTM, Dense, Dropout
+from tensorflow.keras.layers import Input, LSTM, Dense, Dropout
 from tensorflow.keras.callbacks import EarlyStopping
 
 DATA_PATH = "../data/vibrations/vibration_data.csv"
@@ -20,6 +21,10 @@ y = df["label"].values
 scaler = StandardScaler()
 X_scaled = scaler.fit_transform(X)
 
+SCALER_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "models", "scaler.pkl")
+os.makedirs(os.path.dirname(SCALER_PATH), exist_ok=True)
+joblib.dump(scaler, SCALER_PATH)
+
 X_scaled = X_scaled.reshape(X_scaled.shape[0], X_scaled.shape[1], 1)
 
 X_train, X_test, y_train, y_test = train_test_split(
@@ -28,7 +33,8 @@ X_train, X_test, y_train, y_test = train_test_split(
 
 print("⚙️ Building LSTM model...")
 model = Sequential([
-    LSTM(64, input_shape=(X_train.shape[1], 1), return_sequences=True),
+    Input(shape=(X_train.shape[1], 1)),
+    LSTM(64, return_sequences=True),
     Dropout(0.3),
     LSTM(32),
     Dropout(0.3),
